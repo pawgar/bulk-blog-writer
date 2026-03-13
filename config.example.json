@@ -1,0 +1,8 @@
+{
+  "api_key": "",
+  "model": "claude-opus-4-6",
+  "default_lang": "pl",
+  "default_output_dir": "./output",
+  "delay_seconds": 5,
+  "appearance_mode": "dark"
+}
