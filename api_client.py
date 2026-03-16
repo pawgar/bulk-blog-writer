@@ -59,6 +59,20 @@ def build_user_prompt(
     return "\n".join(parts)
 
 
+def calculate_cost(input_tokens: int, output_tokens: int, model: str) -> float:
+    """Oblicza koszt w USD na podstawie tokenów i modelu."""
+    # Cennik Anthropic (USD per 1M tokenów)
+    pricing = {
+        "claude-opus-4-6": {"input": 15.0, "output": 75.0},
+        "claude-sonnet-4-6": {"input": 3.0, "output": 15.0},
+    }
+    prices = pricing.get(model, pricing["claude-sonnet-4-6"])
+    cost = (input_tokens / 1_000_000 * prices["input"]) + (
+        output_tokens / 1_000_000 * prices["output"]
+    )
+    return cost
+
+
 def generate_article(
     client: anthropic.Anthropic,
     article: dict,
@@ -66,8 +80,8 @@ def generate_article(
     lang: str,
     is_zaplecze: bool,
     model: str,
-) -> str:
-    """Generuje pojedynczy artykuł przez Anthropic API. Zwraca tekst Markdown."""
+) -> dict:
+    """Generuje pojedynczy artykuł przez Anthropic API. Zwraca dict z tekstem i usage."""
     user_prompt = build_user_prompt(article, domain, lang, is_zaplecze)
 
     response = client.messages.create(
@@ -82,7 +96,17 @@ def generate_article(
     for block in response.content:
         if block.type == "text":
             text += block.text
-    return text
+
+    input_tokens = response.usage.input_tokens
+    output_tokens = response.usage.output_tokens
+    cost = calculate_cost(input_tokens, output_tokens, model)
+
+    return {
+        "text": text,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "cost": cost,
+    }
 
 
 def generate_article_with_retry(
@@ -98,7 +122,8 @@ def generate_article_with_retry(
     last_error = None
     for attempt in range(max_retries + 1):
         try:
-            return generate_article(client, article, domain, lang, is_zaplecze, model)
+            result = generate_article(client, article, domain, lang, is_zaplecze, model)
+            return result
         except anthropic.AuthenticationError:
             # Nie retryujemy przy złym API key
             raise

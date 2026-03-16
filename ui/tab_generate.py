@@ -245,6 +245,20 @@ class GenerateTab(ctk.CTkFrame):
         )
         self.time_label.pack(side="right")
 
+        # Wiersz kosztów
+        cost_row = ctk.CTkFrame(controls_frame, fg_color="transparent")
+        cost_row.pack(fill="x", pady=(0, 3))
+
+        self.cost_label = ctk.CTkLabel(
+            cost_row, text="", font=ctk.CTkFont(size=12), text_color="#F59E0B"
+        )
+        self.cost_label.pack(side="left")
+
+        self.tokens_label = ctk.CTkLabel(
+            cost_row, text="", font=ctk.CTkFont(size=11), text_color="gray50"
+        )
+        self.tokens_label.pack(side="right")
+
         # Progress bar
         self.progress_bar = ctk.CTkProgressBar(
             controls_frame,
@@ -479,6 +493,9 @@ class GenerateTab(ctk.CTkFrame):
         client = anthropic.Anthropic(api_key=api_key)
         total = len(selected)
         start_time = time.time()
+        total_cost = 0.0
+        total_input_tokens = 0
+        total_output_tokens = 0
 
         # Przygotuj katalog sesji
         session_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")
@@ -541,9 +558,16 @@ class GenerateTab(ctk.CTkFrame):
             self._log(f"Generuję: \"{art['title'][:60]}\"...")
 
             try:
-                text = generate_article_with_retry(
+                result = generate_article_with_retry(
                     client, art, global_domain, lang, is_zaplecze, model
                 )
+                text = result["text"]
+                art_cost = result["cost"]
+                art_input = result["input_tokens"]
+                art_output = result["output_tokens"]
+                total_cost += art_cost
+                total_input_tokens += art_input
+                total_output_tokens += art_output
 
                 # Policz znaki
                 char_count = len(text)
@@ -581,7 +605,20 @@ class GenerateTab(ctk.CTkFrame):
                         i, s, f"{c} zn."
                     ),
                 )
-                self._log(f"✅ Zapisano: {filename} ({char_count} znaków)")
+                self._log(
+                    f"✅ Zapisano: {filename} ({char_count} zn.) | "
+                    f"Tokeny: {art_input}+{art_output} | Koszt: ${art_cost:.4f}"
+                )
+                # Aktualizuj sumaryczne koszty w UI
+                self.after(
+                    0,
+                    lambda c=total_cost, ti=total_input_tokens, to=total_output_tokens: (
+                        self.cost_label.configure(text=f"Koszt sesji: ${c:.4f}"),
+                        self.tokens_label.configure(
+                            text=f"Tokeny: {ti:,} input + {to:,} output = {ti + to:,} łącznie"
+                        ),
+                    ),
+                )
 
                 session_data["success"] += 1
                 session_data["articles"].append(
@@ -591,6 +628,9 @@ class GenerateTab(ctk.CTkFrame):
                         "filename": filename,
                         "chars": char_count,
                         "status": "success",
+                        "input_tokens": art_input,
+                        "output_tokens": art_output,
+                        "cost": round(art_cost, 4),
                     }
                 )
 
@@ -647,9 +687,14 @@ class GenerateTab(ctk.CTkFrame):
             lambda: self.time_label.configure(text=f"Czas całkowity: {elapsed_str}"),
         )
 
+        session_data["total_cost"] = round(total_cost, 4)
+        session_data["total_input_tokens"] = total_input_tokens
+        session_data["total_output_tokens"] = total_output_tokens
+
         self._log(
             f"Zakończono: {session_data['success']} sukces, "
-            f"{session_data['failed']} błędów, czas: {elapsed_str}"
+            f"{session_data['failed']} błędów, czas: {elapsed_str} | "
+            f"Koszt: ${total_cost:.4f} | Tokeny: {total_input_tokens + total_output_tokens:,}"
         )
 
         self.after(0, self._generation_finished)
