@@ -27,7 +27,7 @@ def build_user_prompt(
 
     parts = [
         f"Napisz artykuł blogowy w języku {LANG_NAMES.get(lang, lang)}.",
-        f"**Tytuł (propozycja):** {article['title']}",
+        f"**Tytuł (DOKŁADNY, nie zmieniaj ani jednego słowa):** {article['title']}",
     ]
 
     # Słowa kluczowe — opcjonalne
@@ -54,6 +54,9 @@ def build_user_prompt(
     parts.append(
         "\n8500-9500 znaków ze spacjami. Format Markdown. BEZ linków wewnętrznych. "
         "BEZ meta description."
+        "\n\nKRYTYCZNE ZASADY:"
+        "\n1. Tytuł artykułu (H1) MUSI być DOKŁADNIE taki jak podany powyżej — nie zmieniaj ani jednego słowa, nie dodawaj, nie usuwaj, nie przeformułowuj."
+        "\n2. ZAKAZ pogrubiania nagłówków — nagłówki H1/H2/H3 używają TYLKO składni Markdown (# ## ###), NIGDY nie dodawaj **pogrubienia** wewnątrz nagłówków. Przykład poprawny: `## Jak działa fotowoltaika`. Przykład BŁĘDNY: `## **Jak działa fotowoltaika**`."
     )
 
     return "\n".join(parts)
