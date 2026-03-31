@@ -123,7 +123,7 @@ def generate_article(
         max_tokens=16000,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}],
-        timeout=120.0,
+        timeout=180.0,
     )
 
     text = ""
@@ -150,9 +150,11 @@ def generate_article_with_retry(
     lang: str,
     is_zaplecze: bool,
     model: str,
-    max_retries: int = 1,
+    max_retries: int = 3,
 ) -> str:
-    """Generuje artykuł z retry logic (1 retry po 5s przy timeout/5xx/429)."""
+    """Generuje artykuł z retry logic (3 retry, narastające opóźnienie przy timeout/5xx/429/529)."""
+    # Opóźnienia przed kolejnymi próbami: 10s, 20s, 30s
+    retry_delays = [10, 20, 30]
     last_error = None
     for attempt in range(max_retries + 1):
         try:
@@ -169,14 +171,14 @@ def generate_article_with_retry(
         ) as e:
             last_error = e
             if attempt < max_retries:
-                time.sleep(5)
+                time.sleep(retry_delays[min(attempt, len(retry_delays) - 1)])
             else:
                 raise
         except anthropic.APIStatusError as e:
             if e.status_code in (429, 500, 502, 503, 504, 529):
                 last_error = e
                 if attempt < max_retries:
-                    time.sleep(5)
+                    time.sleep(retry_delays[min(attempt, len(retry_delays) - 1)])
                 else:
                     raise
             else:
