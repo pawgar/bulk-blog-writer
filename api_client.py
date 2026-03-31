@@ -144,7 +144,7 @@ def generate_article_with_retry(
             else:
                 raise
         except anthropic.APIStatusError as e:
-            if e.status_code in (429, 500, 502, 503, 504):
+            if e.status_code in (429, 500, 502, 503, 504, 529):
                 last_error = e
                 if attempt < max_retries:
                     time.sleep(5)
