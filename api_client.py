@@ -64,6 +64,35 @@ def build_user_prompt(
     return "\n".join(parts)
 
 
+def estimate_session_cost(article_count: int) -> dict:
+    """Szacuje koszt sesji przed uruchomieniem dla obu modeli."""
+    # Szacunkowe tokeny: system prompt (~7000) + avg user prompt (~250) + avg output (~3200)
+    system_tokens = len(SYSTEM_PROMPT) // 4
+    avg_user_tokens = 250
+    avg_output_tokens = 3200
+
+    pricing = {
+        "claude-opus-4-6": {"input": 15.0, "output": 75.0},
+        "claude-sonnet-4-6": {"input": 3.0, "output": 15.0},
+    }
+
+    result = {}
+    for model_name, prices in pricing.items():
+        input_per_art = system_tokens + avg_user_tokens
+        output_per_art = avg_output_tokens
+        cost_per_art = (
+            input_per_art / 1_000_000 * prices["input"]
+            + output_per_art / 1_000_000 * prices["output"]
+        )
+        result[model_name] = {
+            "cost_per_article": cost_per_art,
+            "total_cost": cost_per_art * article_count,
+            "input_tokens_per_article": input_per_art,
+            "output_tokens_per_article": output_per_art,
+        }
+    return result
+
+
 def calculate_cost(input_tokens: int, output_tokens: int, model: str) -> float:
     """Oblicza koszt w USD na podstawie tokenów i modelu."""
     # Cennik Anthropic (USD per 1M tokenów)

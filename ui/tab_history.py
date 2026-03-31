@@ -85,12 +85,24 @@ class HistoryTab(ctk.CTkFrame):
 
     def refresh(self):
         """Odświeża listę sesji."""
-        # Usuń istniejące elementy
         for widget in self.scroll_frame.winfo_children():
             widget.destroy()
 
         history = load_history()
         sessions = history.get("sessions", [])
+
+        # Podsumowanie kosztów
+        if sessions:
+            total_cost_all = sum(s.get("total_cost", 0) for s in sessions)
+            total_articles = sum(s.get("success", 0) for s in sessions)
+            summary = ctk.CTkFrame(self.scroll_frame, fg_color="gray17", corner_radius=6)
+            summary.pack(fill="x", pady=(0, 10))
+            ctk.CTkLabel(
+                summary,
+                text=f"Łącznie: {len(sessions)} sesji  |  {total_articles} artykułów  |  Koszt: ${total_cost_all:.3f}",
+                font=ctk.CTkFont(size=12),
+                text_color="gray60",
+            ).pack(padx=12, pady=6)
 
         if not sessions:
             self.no_data_label = ctk.CTkLabel(
@@ -175,6 +187,17 @@ class HistoryTab(ctk.CTkFrame):
                 font=ctk.CTkFont(size=11),
                 text_color=COLOR_RED,
             ).pack(side="left", padx=(2, 0))
+
+        # Koszt sesji
+        total_cost = session.get("total_cost")
+        if total_cost is not None:
+            ctk.CTkLabel(
+                main_row,
+                text=f"${total_cost:.3f}",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color="#F59E0B",
+                width=65,
+            ).pack(side="right", padx=(5, 0))
 
         # Czas
         elapsed = session.get("elapsed_seconds", 0)

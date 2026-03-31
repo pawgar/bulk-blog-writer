@@ -319,3 +319,75 @@ Zakázána jako generické zesilující výrazy. Povolena POUZE v doslovném vý
 
 ### Zakazané sekvenční výčty (CS)
 NIKDY nepoužívejte sekvence: "Za prvé... Za druhé... Za třetí..." Rozveďte do samostatných odstavců nebo použijte odrážkové seznamy.
+
+---
+
+## Litewski (Lietuvių)
+
+### Zakazane wzorce nagłówków
+- "Išsamus vadovas apie..."
+- "Viskas, ką reikia žinoti apie..."
+- "Kodėl X yra svarbu"
+- "X reikšmė"
+- "Praktiniai patarimai" / "Praktiniai patarimai apie..."
+- "Išvada" (jako samodzielny nagłówek)
+- "Apibendrinimas" (jako samodzielny nagłówek)
+- Dowolny nagłówek tak ogólny, że mógłby pasować do dowolnego artykułu
+
+### Zakazane frazy w tekście
+- "Verta pažymėti, kad"
+- "Reikia pabrėžti, kad"
+- "Šiuolaikiniame pasaulyje"
+- "Kalbant apie"
+- "Galiausiai"
+- "Be to"
+- "Apibendrinant"
+- "Atlieka svarbų vaidmenį"
+- "Atlieka pagrindinį vaidmenį"
+- "Yra pagrindas"
+- "Yra esminis"
+- "Praktiniai patarimai"
+
+### Zakazane słowa w kontekście generycznym (LT)
+Draudžiami kaip bendrieji stiprinantys žodžiai. Leidžiami TIK tiesiogine prasme:
+- "esminis" / "pagrindinis" / "svarbus" (kaip bendriniai stiprintojai)
+- "praktinis" antraštėse kaip "Praktiniai patarimai"
+
+### Zakazane wyliczenia sekwencyjne (LT)
+NIEKADA nenaudokite sekų: "Pirma... Antra... Trečia..." Išplėskite į atskirus skyrius arba naudokite sąrašus.
+
+---
+
+## Łotewski (Latviešu)
+
+### Zakazane wzorce nagłówków
+- "Visaptverošs ceļvedis par..."
+- "Viss, kas jāzina par..."
+- "Kāpēc X ir svarīgi"
+- "X nozīme"
+- "Praktiski padomi" / "Praktiski padomi par..."
+- "Secinājums" (jako samodzielny nagłówek)
+- "Kopsavilkums" (jako samodzielny nagłówek)
+- Jebkura virsraksts tik vispārīgs, ka varētu attiekties uz jebkuru rakstu
+
+### Zakazane frazy w tekście
+- "Ir vērts atzīmēt, ka"
+- "Jāuzsver, ka"
+- "Mūsdienu pasaulē"
+- "Runājot par"
+- "Galu galā"
+- "Turklāt"
+- "Apkopojot"
+- "Spēlē svarīgu lomu"
+- "Spēlē galveno lomu"
+- "Ir pamats"
+- "Ir būtisks"
+- "Praktiski padomi"
+
+### Zakazane słowa w kontekście generycznym (LV)
+Aizliegti kā vispārīgi pastiprinātāji. Atļauti TIKAI tiešā nozīmē:
+- "būtisks" / "pamata" / "galvenais" (kā vispārīgi pastiprinātāji)
+- "praktisks" virsrakstos kā "Praktiski padomi"
+
+### Zakazane wyliczenia sekwencyjne (LV)
+NEKAD nelietojiet secības: "Pirmkārt... Otrkārt... Treškārt..." Izvērsiet atsevišķās rindkopās vai izmantojiet sarakstus.
