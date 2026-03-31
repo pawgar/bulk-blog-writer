@@ -10,10 +10,155 @@ from tkinter import filedialog
 import customtkinter as ctk
 import anthropic
 
-from xlsx_parser import parse_content_plan
+from xlsx_parser import read_xlsx_headers, auto_detect_columns, parse_content_plan
 from api_client import generate_article_with_retry
 from ui.components import ACCENT_GREEN, ACCENT_GREEN_HOVER, LogConsole
 from ui.tab_history import add_session
+
+
+# ===== Dialog mapowania kolumn =====
+
+FIELD_LABELS = {
+    "title": "Tytuł wpisu *",
+    "main_kw": "Główne słowo kluczowe",
+    "secondary_kw": "Słowa kluczowe poboczne",
+    "notes": "Dodatkowe informacje",
+    "domain": "Domena",
+    "lang": "Język",
+}
+
+FIELD_ORDER = ["title", "main_kw", "secondary_kw", "notes", "domain", "lang"]
+
+
+class ColumnMappingDialog(ctk.CTkToplevel):
+    """Dialog do mapowania kolumn XLSX na pola content planu."""
+
+    def __init__(self, master, headers: list[str], auto_map: dict[str, int | None]):
+        super().__init__(master)
+        self.title("Mapowanie kolumn XLSX")
+        self.geometry("520x420")
+        self.resizable(False, False)
+        self.transient(master.winfo_toplevel())
+        self.grab_set()
+
+        self.result: dict[str, int | None] | None = None
+        self._headers = headers
+        self._dropdowns: dict[str, ctk.CTkOptionMenu] = {}
+        self._vars: dict[str, ctk.StringVar] = {}
+
+        # Opcje dropdown: "— pomiń —" + nazwy kolumn z numerem
+        self._none_label = "— pomiń —"
+        self._options = [self._none_label] + [
+            f"{i + 1}. {h}" for i, h in enumerate(headers)
+        ]
+
+        self._build_ui(auto_map)
+        self.after(100, self.focus_force)
+
+    def _build_ui(self, auto_map: dict[str, int | None]):
+        ctk.CTkLabel(
+            self,
+            text="Wskaż kolumny z pliku XLSX",
+            font=ctk.CTkFont(size=16, weight="bold"),
+        ).pack(pady=(15, 5))
+
+        ctk.CTkLabel(
+            self,
+            text="Automatyczne mapowanie wykryło poniższe przypisania.\nZmień je jeśli są nieprawidłowe.",
+            font=ctk.CTkFont(size=12),
+            text_color="gray50",
+        ).pack(pady=(0, 10))
+
+        form = ctk.CTkFrame(self, fg_color="transparent")
+        form.pack(fill="x", padx=30, pady=(0, 10))
+
+        for field_key in FIELD_ORDER:
+            row = ctk.CTkFrame(form, fg_color="transparent")
+            row.pack(fill="x", pady=4)
+
+            ctk.CTkLabel(
+                row,
+                text=FIELD_LABELS[field_key],
+                font=ctk.CTkFont(size=13),
+                width=200,
+                anchor="w",
+            ).pack(side="left")
+
+            # Ustaw domyślną wartość z auto-detect
+            detected_idx = auto_map.get(field_key)
+            if detected_idx is not None and detected_idx < len(self._headers):
+                default = f"{detected_idx + 1}. {self._headers[detected_idx]}"
+            else:
+                default = self._none_label
+
+            var = ctk.StringVar(value=default)
+            self._vars[field_key] = var
+
+            dropdown = ctk.CTkOptionMenu(
+                row,
+                values=self._options,
+                variable=var,
+                width=260,
+            )
+            dropdown.pack(side="right")
+            self._dropdowns[field_key] = dropdown
+
+        # Przyciski
+        btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        btn_frame.pack(pady=(10, 15))
+
+        ctk.CTkButton(
+            btn_frame,
+            text="Zatwierdź",
+            fg_color=ACCENT_GREEN,
+            hover_color=ACCENT_GREEN_HOVER,
+            text_color="black",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            width=140,
+            height=36,
+            command=self._on_confirm,
+        ).pack(side="left", padx=(0, 10))
+
+        ctk.CTkButton(
+            btn_frame,
+            text="Anuluj",
+            fg_color="gray30",
+            hover_color="gray40",
+            width=100,
+            height=36,
+            command=self._on_cancel,
+        ).pack(side="left")
+
+    def _on_confirm(self):
+        mapping: dict[str, int | None] = {}
+        for field_key in FIELD_ORDER:
+            val = self._vars[field_key].get()
+            if val == self._none_label:
+                mapping[field_key] = None
+            else:
+                # Parsuj numer kolumny z "1. Tytuł wpisu" → indeks 0
+                try:
+                    idx = int(val.split(".")[0]) - 1
+                    mapping[field_key] = idx
+                except (ValueError, IndexError):
+                    mapping[field_key] = None
+
+        if mapping.get("title") is None:
+            # Tytuł jest wymagany
+            for widget in self.winfo_children():
+                if isinstance(widget, ctk.CTkLabel) and "Wskaż" in (widget.cget("text") or ""):
+                    widget.configure(text="Kolumna 'Tytuł wpisu' jest wymagana!", text_color="#EF4444")
+                    return
+            return
+
+        self.result = mapping
+        self.grab_release()
+        self.destroy()
+
+    def _on_cancel(self):
+        self.result = None
+        self.grab_release()
+        self.destroy()
 
 
 def _slugify(text: str, max_len: int = 50) -> str:
@@ -87,7 +232,7 @@ class GenerateTab(ctk.CTkFrame):
         self.lang_var = ctk.StringVar(value=default_lang)
         ctk.CTkOptionMenu(
             row1,
-            values=["PL", "DE", "NL", "ES", "SV", "CS", "EN"],
+            values=["PL", "DE", "NL", "ES", "SV", "CS", "EN", "LT", "LV"],
             variable=self.lang_var,
             width=70,
         ).pack(side="right")
@@ -286,15 +431,33 @@ class GenerateTab(ctk.CTkFrame):
             self.output_entry.insert(0, path)
 
     def _load_xlsx(self):
-        """Wczytuje plik XLSX i wypełnia tabelę."""
+        """Wczytuje plik XLSX, pokazuje dialog mapowania kolumn, wypełnia tabelę."""
         filepath = filedialog.askopenfilename(
             filetypes=[("Pliki Excel", "*.xlsx"), ("Wszystkie pliki", "*.*")]
         )
         if not filepath:
             return
 
+        # Czytaj nagłówki i auto-detect kolumn
         try:
-            self.articles = parse_content_plan(filepath)
+            headers = read_xlsx_headers(filepath)
+        except Exception as e:
+            self.log.append(f"[BŁĄD] Nie udało się wczytać pliku: {e}")
+            return
+
+        auto_map = auto_detect_columns(headers)
+
+        # Pokaż dialog mapowania kolumn
+        dialog = ColumnMappingDialog(self, headers, auto_map)
+        self.wait_window(dialog)
+
+        if dialog.result is None:
+            # Użytkownik anulował
+            return
+
+        # Parsuj z wybranym mapowaniem
+        try:
+            self.articles = parse_content_plan(filepath, dialog.result)
         except ValueError as e:
             self.log.append(f"[BŁĄD] {e}")
             return
@@ -557,9 +720,12 @@ class GenerateTab(ctk.CTkFrame):
             self.after(0, lambda i=idx: self._update_status(i, "generating"))
             self._log(f"Generuję: \"{art['title'][:60]}\"...")
 
+            # Język per artykuł z XLSX ma priorytet nad globalnym
+            art_lang = art.get("lang", "").strip().lower() or lang
+
             try:
                 result = generate_article_with_retry(
-                    client, art, global_domain, lang, is_zaplecze, model
+                    client, art, global_domain, art_lang, is_zaplecze, model
                 )
                 text = result["text"]
                 art_cost = result["cost"]

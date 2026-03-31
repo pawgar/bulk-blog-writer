@@ -3,40 +3,93 @@
 import openpyxl
 
 
-def parse_content_plan(filepath: str) -> list[dict]:
-    """Parsuje XLSX z content-plan-creator. Zwraca listę dict z artykułami."""
+def read_xlsx_headers(filepath: str) -> list[str]:
+    """Czyta nagłówki (pierwszy wiersz) z pliku XLSX. Zwraca listę stringów."""
     wb = openpyxl.load_workbook(filepath, read_only=True)
     ws = wb.active
-    headers = [str(c.value or "").strip().lower() for c in ws[1]]
+    headers = [str(c.value or "").strip() for c in ws[1]]
+    wb.close()
+    return headers
 
-    # Elastyczne mapowanie kolumn
-    col_map = {}
-    for i, h in enumerate(headers):
-        if any(k in h for k in ["tytuł", "title", "tytul"]):
+
+def auto_detect_columns(headers: list[str]) -> dict[str, int | None]:
+    """Próbuje automatycznie zmapować kolumny. Zwraca dict z indeksami lub None."""
+    headers_lower = [h.lower() for h in headers]
+    col_map: dict[str, int | None] = {
+        "title": None,
+        "main_kw": None,
+        "secondary_kw": None,
+        "notes": None,
+        "domain": None,
+        "lang": None,
+    }
+
+    for i, h in enumerate(headers_lower):
+        # Tytuł
+        if col_map["title"] is None and any(
+            k in h
+            for k in [
+                "tytuł", "tytul", "title", "temat", "nagłówek", "naglowek",
+                "heading", "topic",
+            ]
+        ):
             col_map["title"] = i
-        elif any(k in h for k in ["główne", "glowne", "main"]) and any(
-            k in h for k in ["słowo", "slowo", "keyword"]
+        # Główne słowo kluczowe
+        elif col_map["main_kw"] is None and (
+            (any(k in h for k in ["główne", "glowne", "main", "primary"])
+             and any(k in h for k in ["słowo", "slowo", "keyword", "kw", "fraza"]))
+            or h in ["główne kw", "glowne kw", "main kw", "main keyword",
+                      "keyword", "słowo kluczowe", "slowo kluczowe", "fraza kluczowa"]
         ):
             col_map["main_kw"] = i
-        elif any(k in h for k in ["poboczne", "secondary", "supporting"]):
+        # Słowa kluczowe poboczne
+        elif col_map["secondary_kw"] is None and any(
+            k in h
+            for k in [
+                "poboczne", "secondary", "supporting", "dodatkowe kw",
+                "dodatkowe słowa", "dodatkowe slowa", "related", "long tail",
+                "long-tail", "frazy poboczne", "słowa poboczne", "slowa poboczne",
+            ]
+        ):
             col_map["secondary_kw"] = i
-        elif any(k in h for k in ["dodatkowe", "additional", "info", "uwagi"]):
+        # Dodatkowe informacje
+        elif col_map["notes"] is None and any(
+            k in h
+            for k in [
+                "dodatkowe informacje", "dodatkowe info", "additional",
+                "uwagi", "notes", "notatki", "komentarz", "opis",
+                "wskazówki", "wskazowki", "instructions", "brief",
+            ]
+        ):
             col_map["notes"] = i
-        elif any(k in h for k in ["domena", "domain"]):
+        # Domena
+        elif col_map["domain"] is None and any(
+            k in h for k in ["domena", "domain", "strona", "website", "site", "url"]
+        ):
             col_map["domain"] = i
+        # Język
+        elif col_map["lang"] is None and any(
+            k in h for k in ["język", "jezyk", "lang", "language"]
+        ):
+            col_map["lang"] = i
 
-    if "title" not in col_map:
-        wb.close()
-        raise ValueError(
-            "Nie znaleziono kolumny z tytułem wpisu. "
-            "Oczekiwane nazwy: 'Tytuł wpisu', 'Title'."
-        )
+    return col_map
+
+
+def parse_content_plan(filepath: str, col_map: dict[str, int | None]) -> list[dict]:
+    """Parsuje XLSX z podanym mapowaniem kolumn. Zwraca listę dict z artykułami."""
+    if col_map.get("title") is None:
+        raise ValueError("Nie wskazano kolumny z tytułem wpisu.")
+
+    wb = openpyxl.load_workbook(filepath, read_only=True)
+    ws = wb.active
 
     articles = []
     for row in ws.iter_rows(min_row=2, values_only=True):
-        if col_map["title"] >= len(row):
+        title_idx = col_map["title"]
+        if title_idx >= len(row):
             continue
-        title = str(row[col_map["title"]] or "").strip()
+        title = str(row[title_idx] or "").strip()
         if not title:
             continue
 
@@ -53,6 +106,7 @@ def parse_content_plan(filepath: str) -> list[dict]:
                 "secondary_kw": _get("secondary_kw"),
                 "notes": _get("notes"),
                 "domain": _get("domain"),
+                "lang": _get("lang"),
             }
         )
 

@@ -15,6 +15,8 @@ LANG_NAMES = {
     "sv": "szwedzki",
     "cs": "czeski",
     "en": "angielski",
+    "lt": "litewski",
+    "lv": "łotewski",
 }
 
 

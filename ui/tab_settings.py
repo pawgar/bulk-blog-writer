@@ -96,7 +96,7 @@ class SettingsTab(ctk.CTkFrame):
         self.lang_var = ctk.StringVar(value=self.config.get("default_lang", "pl").upper())
         self.lang_dropdown = ctk.CTkOptionMenu(
             container,
-            values=["PL", "DE", "NL", "ES", "SV", "CS", "EN"],
+            values=["PL", "DE", "NL", "ES", "SV", "CS", "EN", "LT", "LV"],
             variable=self.lang_var,
             width=120,
         )
