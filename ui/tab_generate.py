@@ -269,8 +269,8 @@ class GenerateTab(ctk.CTkFrame):
 
         col_header = ctk.CTkFrame(self, fg_color="gray20", corner_radius=4)
         col_header.pack(fill="x", padx=20, pady=(2, 0))
-        widths = [30, 30, 230, 150, 170, 110, 60, 110]
-        labels = ["✓", "#", "Tytuł wpisu", "Główne KW", "Słowa poboczne", "Domena", "↕", "Status"]
+        widths = [30, 30, 210, 130, 150, 100, 35, 50, 90]
+        labels = ["✓", "#", "Tytuł wpisu", "Główne KW", "Słowa poboczne", "Domena", "Jęz.", "↕", "Status"]
         for w, label in zip(widths, labels):
             ctk.CTkLabel(
                 col_header, text=label,
@@ -436,29 +436,29 @@ class GenerateTab(ctk.CTkFrame):
 
             # Tytuł
             title_text = art["title"]
-            if len(title_text) > 40:
-                title_text = title_text[:37] + "..."
+            if len(title_text) > 35:
+                title_text = title_text[:32] + "..."
             ctk.CTkLabel(
-                row_frame, text=title_text, width=230,
+                row_frame, text=title_text, width=210,
                 font=ctk.CTkFont(size=11), anchor="w",
             ).pack(side="left", padx=3)
 
             # Główne KW
             kw_text = art.get("main_kw", "")
-            if len(kw_text) > 22:
-                kw_text = kw_text[:19] + "..."
+            if len(kw_text) > 20:
+                kw_text = kw_text[:17] + "..."
             ctk.CTkLabel(
-                row_frame, text=kw_text or "—", width=150,
+                row_frame, text=kw_text or "—", width=130,
                 font=ctk.CTkFont(size=11),
                 text_color="gray50" if not kw_text else None, anchor="w",
             ).pack(side="left", padx=3)
 
             # Słowa poboczne
             sec_kw_text = art.get("secondary_kw", "")
-            if len(sec_kw_text) > 26:
-                sec_kw_text = sec_kw_text[:23] + "..."
+            if len(sec_kw_text) > 22:
+                sec_kw_text = sec_kw_text[:19] + "..."
             ctk.CTkLabel(
-                row_frame, text=sec_kw_text or "—", width=170,
+                row_frame, text=sec_kw_text or "—", width=150,
                 font=ctk.CTkFont(size=11),
                 text_color="gray50" if not sec_kw_text else "gray70", anchor="w",
             ).pack(side="left", padx=3)
@@ -466,12 +466,21 @@ class GenerateTab(ctk.CTkFrame):
             # Domena
             domain = art.get("domain", "") or global_domain
             ctk.CTkLabel(
-                row_frame, text=domain or "—", width=110,
+                row_frame, text=domain or "—", width=100,
                 font=ctk.CTkFont(
                     size=11,
                     slant="italic" if not art.get("domain") and domain else "roman",
                 ),
                 text_color="gray50" if not domain else None, anchor="w",
+            ).pack(side="left", padx=3)
+
+            # Język
+            art_lang = (art.get("lang", "") or self.lang_var.get()).upper()
+            ctk.CTkLabel(
+                row_frame, text=art_lang, width=35,
+                font=ctk.CTkFont(size=11),
+                text_color="gray60" if not art.get("lang") else "#60A5FA",
+                anchor="w",
             ).pack(side="left", padx=3)
 
             # Przyciski ↑↓ do zmiany kolejności

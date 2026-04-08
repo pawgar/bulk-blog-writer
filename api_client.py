@@ -3,6 +3,7 @@
 import time
 import anthropic
 from system_prompt import load_system_prompt
+from clients_manager import build_client_context
 
 # System prompt ładowany raz przy imporcie modułu
 SYSTEM_PROMPT = load_system_prompt()
@@ -52,6 +53,11 @@ def build_user_prompt(
         parts.append("\nArtykuł ZAPLECZOWY — bez kontekstu konkretnego serwisu.")
     elif domain:
         parts.append(f"\n**Domena docelowa:** {domain}")
+        # Wstrzyknij kontekst klienta (jeśli karta istnieje)
+        client_ctx = build_client_context(domain)
+        if client_ctx:
+            parts.append(client_ctx)
+            parts.append("\nUżyj kontekstu klienta aby dostosować ton, terminologię i perspektywę artykułu do specyfiki firmy i jej grupy docelowej.")
 
     parts.append(
         "\n8500-9500 znaków ze spacjami. Format Markdown. BEZ linków wewnętrznych. "

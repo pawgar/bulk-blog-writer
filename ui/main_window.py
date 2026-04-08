@@ -10,6 +10,7 @@ from config_manager import load_config, save_config
 from ui.tab_generate import GenerateTab
 from ui.tab_history import HistoryTab
 from ui.tab_settings import SettingsTab
+from ui.tab_clients import ClientsTab
 from ui.components import ACCENT_GREEN
 
 STATUS_URL = "https://status.claude.com/api/v2/status.json"
@@ -80,6 +81,7 @@ class MainWindow(ctk.CTk):
         self.tabview.pack(fill="both", expand=True, padx=10, pady=(4, 10))
 
         self.tabview.add("Generuj")
+        self.tabview.add("Klienci")
         self.tabview.add("Historia")
         self.tabview.add("Ustawienia")
 
@@ -96,6 +98,9 @@ class MainWindow(ctk.CTk):
             get_config_callback=self._get_current_config,
         )
         self.generate_tab.pack(fill="both", expand=True)
+
+        self.clients_tab = ClientsTab(self.tabview.tab("Klienci"))
+        self.clients_tab.pack(fill="both", expand=True)
 
         self.history_tab = HistoryTab(self.tabview.tab("Historia"))
         self.history_tab.pack(fill="both", expand=True)
