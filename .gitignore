@@ -14,3 +14,4 @@ output/
 .idea/
 *.swp
 *.swo
+clients.json
