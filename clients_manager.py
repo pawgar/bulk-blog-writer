@@ -15,6 +15,9 @@ CLIENT_FIELDS = {
     "avoid": "Czego unikać",
 }
 
+# Pole linków wewnętrznych — oddzielne, bo ma inny format (multiline lista URL-i)
+INTERNAL_LINKS_FIELD = "internal_links"
+
 
 def load_clients() -> dict[str, dict]:
     """Wczytuje karty klientów z pliku JSON."""
@@ -86,4 +89,37 @@ def build_client_context(domain: str) -> str:
 
     if len(lines) == 1:
         return ""  # Pusta karta
+    return "\n".join(lines)
+
+
+def get_internal_links(domain: str) -> list[str]:
+    """Zwraca listę linków wewnętrznych dla domeny (niepuste linie z pola internal_links)."""
+    client = get_client(domain)
+    if not client:
+        return []
+    raw = client.get(INTERNAL_LINKS_FIELD, "").strip()
+    if not raw:
+        return []
+    return [line.strip() for line in raw.splitlines() if line.strip()]
+
+
+def build_internal_links_context(domain: str) -> str:
+    """Buduje blok instrukcji linkowania wewnętrznego.
+    Zwraca pusty string gdy brak linków.
+    """
+    links = get_internal_links(domain)
+    if not links:
+        return ""
+
+    lines = [
+        "\n**Linkowanie wewnętrzne — OBOWIĄZKOWE (2-3 linki w artykule):**",
+        "Poniżej lista podstron klienta. Wstaw 2-3 linki wewnętrzne w tekście artykułu — wybierz te, "
+        "które najlepiej pasują kontekstowo do treści. Anchor text musi być naturalny (nie upychaj "
+        "dokładnej frazy kluczowej). Rozmieść linki równomiernie w artykule. Format: `[anchor text](URL)`.",
+        "",
+        "Dostępne podstrony do linkowania:",
+    ]
+    for link in links:
+        lines.append(f"- {link}")
+
     return "\n".join(lines)

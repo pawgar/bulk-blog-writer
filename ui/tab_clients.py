@@ -3,7 +3,7 @@
 import customtkinter as ctk
 
 from clients_manager import (
-    load_clients, save_client, delete_client, CLIENT_FIELDS,
+    load_clients, save_client, delete_client, CLIENT_FIELDS, INTERNAL_LINKS_FIELD,
 )
 from ui.components import ACCENT_GREEN, ACCENT_GREEN_HOVER, COLOR_RED
 
@@ -83,6 +83,28 @@ class ClientsTab(ctk.CTkFrame):
             )
             textbox.pack(side="left", fill="x", expand=True)
             self._entries[field_key] = textbox
+
+        # Sekcja linków wewnętrznych
+        links_row = ctk.CTkFrame(self._form_frame, fg_color="transparent")
+        links_row.pack(fill="x", pady=(0, 8))
+
+        links_label_frame = ctk.CTkFrame(links_row, fg_color="transparent")
+        links_label_frame.pack(side="left", anchor="n", pady=(4, 0))
+
+        ctk.CTkLabel(
+            links_label_frame, text="Linki wewnętrzne",
+            font=ctk.CTkFont(size=13), width=160, anchor="w",
+        ).pack(anchor="w")
+        ctk.CTkLabel(
+            links_label_frame, text="(jeden URL per linia)",
+            font=ctk.CTkFont(size=10), text_color="gray50", width=160, anchor="w",
+        ).pack(anchor="w")
+
+        self._links_textbox = ctk.CTkTextbox(
+            links_row, height=90, font=ctk.CTkFont(size=12),
+            wrap="word", state="disabled",
+        )
+        self._links_textbox.pack(side="left", fill="x", expand=True)
 
         # Przyciski pod formularzem
         btn_frame = ctk.CTkFrame(self._form_frame, fg_color="transparent")
@@ -178,6 +200,11 @@ class ClientsTab(ctk.CTkFrame):
             textbox.delete("1.0", "end")
             textbox.insert("1.0", data.get(field_key, ""))
 
+        # Linki wewnętrzne
+        self._links_textbox.configure(state="normal")
+        self._links_textbox.delete("1.0", "end")
+        self._links_textbox.insert("1.0", data.get(INTERNAL_LINKS_FIELD, ""))
+
         self._save_btn.configure(state="normal")
         self._delete_btn.configure(state="normal")
         self._status_label.configure(text="")
@@ -189,6 +216,7 @@ class ClientsTab(ctk.CTkFrame):
         data = {}
         for field_key, textbox in self._entries.items():
             data[field_key] = textbox.get("1.0", "end").strip()
+        data[INTERNAL_LINKS_FIELD] = self._links_textbox.get("1.0", "end").strip()
         save_client(self._current_domain, data)
         self._status_label.configure(
             text="Zapisano.",
@@ -214,6 +242,9 @@ class ClientsTab(ctk.CTkFrame):
             textbox.configure(state="normal")
             textbox.delete("1.0", "end")
             textbox.configure(state="disabled")
+        self._links_textbox.configure(state="normal")
+        self._links_textbox.delete("1.0", "end")
+        self._links_textbox.configure(state="disabled")
         self._save_btn.configure(state="disabled")
         self._delete_btn.configure(state="disabled")
         self._status_label.configure(text="")

@@ -3,7 +3,7 @@
 import time
 import anthropic
 from system_prompt import load_system_prompt
-from clients_manager import build_client_context
+from clients_manager import build_client_context, build_internal_links_context
 
 # System prompt ładowany raz przy imporcie modułu
 SYSTEM_PROMPT = load_system_prompt()
@@ -58,9 +58,20 @@ def build_user_prompt(
         if client_ctx:
             parts.append(client_ctx)
             parts.append("\nUżyj kontekstu klienta aby dostosować ton, terminologię i perspektywę artykułu do specyfiki firmy i jej grupy docelowej.")
+        # Wstrzyknij linki wewnętrzne (jeśli uzupełnione)
+        links_ctx = build_internal_links_context(domain)
+        if links_ctx:
+            parts.append(links_ctx)
 
+    # Sprawdź czy mamy linki wewnętrzne dla tej domeny
+    has_links = False
+    if not is_zaplecze and domain:
+        from clients_manager import get_internal_links
+        has_links = bool(get_internal_links(domain))
+
+    links_rule = "BEZ linków wewnętrznych." if not has_links else "Wstaw 2-3 linki wewnętrzne z listy podstron podanej wyżej."
     parts.append(
-        "\n8500-9500 znaków ze spacjami. Format Markdown. BEZ linków wewnętrznych. "
+        f"\n8500-9500 znaków ze spacjami. Format Markdown. {links_rule} "
         "BEZ meta description."
         "\n\nKRYTYCZNE ZASADY:"
         "\n1. Tytuł artykułu (H1) MUSI być DOKŁADNIE taki jak podany powyżej — nie zmieniaj ani jednego słowa, nie dodawaj, nie usuwaj, nie przeformułowuj."
