@@ -3,13 +3,15 @@
 import json
 from pathlib import Path
 
-CONFIG_PATH = Path(__file__).parent / "config.json"
+APP_DIR = Path(__file__).parent
+CONFIG_PATH = APP_DIR / "config.json"
 
 DEFAULT_CONFIG = {
     "api_key": "",
     "model": "claude-opus-4-6",
     "default_lang": "pl",
-    "default_output_dir": "./output",
+    # Absolutna ścieżka — uniezależnia się od CWD procesu (pythonw startujący z ikony).
+    "default_output_dir": str(APP_DIR / "output"),
     "delay_seconds": 5,
     "appearance_mode": "dark",
 }

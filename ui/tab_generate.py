@@ -668,7 +668,23 @@ class GenerateTab(ctk.CTkFrame):
         total_output_tokens = 0
 
         session_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-        session_dir = Path(output_base) / session_id
+
+        # Jeśli ścieżka jest względna — rozwiąż ją względem katalogu aplikacji
+        # (nie CWD, które może być gdzieś indziej gdy pythonw startuje z ikony).
+        output_base_path = Path(output_base)
+        if not output_base_path.is_absolute():
+            app_dir = Path(__file__).resolve().parent.parent
+            output_base_path = (app_dir / output_base_path).resolve()
+        session_dir = output_base_path / session_id
+
+        # Sprawdź wcześnie czy można stworzyć katalog — zamiast wywalić wątek w środku generowania
+        try:
+            session_dir.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError) as e:
+            self._log(f"[BŁĄD] Nie mogę utworzyć katalogu wyjściowego: {session_dir}")
+            self._log(f"[BŁĄD] {e}. Zmień katalog w Ustawieniach na folder z uprawnieniami zapisu.")
+            self.after(0, self._generation_finished)
+            return
 
         domains_in_plan = set()
         for idx in selected:
@@ -677,7 +693,6 @@ class GenerateTab(ctk.CTkFrame):
             domains_in_plan.add(d or "_bez-domeny")
         use_subdirs = len(domains_in_plan) > 1
 
-        session_dir.mkdir(parents=True, exist_ok=True)
         self._session_dir = session_dir
 
         session_data = {
